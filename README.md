@@ -1,4 +1,21 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Byul Gantt Chart
+
+커스텀 Gantt Chart 프로젝트입니다.
+
+## 프로젝트 소개
+
+React 호환 Gantt Chart 라이브러리들을 검토했으나, 원하는 UI/기능을 구현하는 과정에서 커스터마이징 버그가 많아 직접 Gantt Chart를 제작하기로 결정했습니다.
+
+### 목표
+- Notion에서 제공하는 Gantt Chart와 동일한 UI/UX 구현
+- 깔끔하고 직관적인 태스크 관리 인터페이스
+- 부드러운 인터랙션과 애니메이션
+
+### 기술 스택
+- **Framework**: Next.js 16
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS (with @apply)
+- **Date**: dayjs
 
 ## Getting Started
 
@@ -18,19 +35,20 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 프로젝트 구조
 
-## Learn More
+```
+├── app/                 # 라우팅 전용
+├── components/          # UI 컴포넌트
+├── hooks/               # Custom Hooks
+├── utils/               # 유틸리티 함수
+├── types/               # TypeScript 타입
+├── assets/              # 이미지/아이콘
+├── docs/                # 스토리보드/참고 자료
+└── public/              # 정적 파일
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 참고 자료
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 디자인 레퍼런스: `docs/wannabe/notion-gantt.png`
+- 스토리보드: `docs/ppt/storyboard_v1.pptx`
