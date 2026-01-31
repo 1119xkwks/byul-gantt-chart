@@ -1,0 +1,529 @@
+/* CommonChartGanttCard.module.css - Notion 스타일 간트차트 (오버레이 + 2줄 헤더) */
+
+/* ============================================
+   메인 컨테이너
+   ============================================ */
+.ganttCardContainer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+    background-color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    color: #37352f;
+    overflow: hidden;
+}
+
+/* ============================================
+   좌측 토글 버튼 (오버레이)
+   ============================================ */
+.ganttToggleButton {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-right: 1px solid #e5e7eb;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 12px;
+    z-index: 20;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.ganttToggleButton:hover {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+/* ============================================
+   좌측 패널 (오버레이)
+   ============================================ */
+.ganttLeftPanel {
+    position: absolute;
+    left: 24px;
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    background-color: #ffffff;
+    border-right: 1px solid #e5e7eb;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(0);
+    transition: transform 0.2s ease;
+}
+
+.ganttLeftPanel.collapsed {
+    transform: translateX(-280px);
+}
+
+.ganttLeftPanelHeader {
+    height: 80px;
+    border-bottom: 1px solid #e5e7eb;
+    background-color: #fafafa;
+}
+
+.ganttTaskList {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.ganttTaskRow {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 12px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+}
+
+.ganttTaskRow:hover {
+    background-color: #f9fafb;
+}
+
+.ganttTaskTitle {
+    flex: 1;
+    font-size: 13px;
+    color: #374151;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ganttTaskStatus {
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 500;
+    border-radius: 3px;
+    margin-left: 6px;
+}
+
+.ganttTaskStatus.planning {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+}
+
+.ganttTaskStatus.development {
+    background-color: #fef3c7;
+    color: #d97706;
+}
+
+.ganttTaskStatus.review {
+    background-color: #e5e7eb;
+    color: #6b7280;
+}
+
+.ganttTaskStatus.completed {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+/* ============================================
+   메인 콘텐츠 영역
+   ============================================ */
+.ganttMainContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-left: 24px;
+    overflow: hidden;
+}
+
+/* ============================================
+   HEADER 영역 (좌측 년월 오버레이 + 우측 컨트롤)
+   ============================================ */
+.ganttHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 36px;
+    padding: 0 16px;
+    background-color: #ffffff;
+    flex-shrink: 0;
+}
+
+/* 좌측 년월 오버레이 */
+.ganttOverlayYearMonth {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+/* 우측 컨트롤 */
+.ganttControls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 네비게이션 버튼 (<< < > >>) - 박스 형태 복구 */
+.ganttHeaderButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 4px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    background-color: #ffffff;
+    color: #6b7280;
+    /* 아이콘 색상 */
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.ganttHeaderButton:hover {
+    background-color: #f3f4f6;
+    color: #374151;
+    border-color: #d1d5db;
+}
+
+/* Today 버튼 */
+.ganttTodayButton {
+    height: 28px;
+    padding: 0 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    background-color: #ffffff;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ganttTodayButton:hover {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+}
+
+/* ============================================
+   타임라인 헤더 (2줄: 월 + 일자)
+   ============================================ */
+.ganttTimelineHeader {
+    position: relative;
+    height: 44px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.ganttTimelineHeaderInner {
+    position: relative;
+    display: flex;
+    gap: 12px;
+    height: 100%;
+}
+
+.ganttButtonGroup {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.ganttSelectWrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.ganttSelect {
+    height: 28px;
+    padding: 0 4px 0 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    background-color: #ffffff;
+    color: #374151;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+}
+
+.ganttMonthColumn {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    border-right: 1px solid #f3f4f6;
+}
+
+/* 첫째 줄: 월 */
+.ganttMonthRow {
+    height: 22px;
+    display: flex;
+    align-items: center;
+    padding-left: 4px;
+}
+
+.ganttMonthLabel {
+    font-size: 11px;
+    color: #9ca3af;
+    white-space: nowrap;
+}
+
+/* 둘째 줄: 일자 */
+.ganttDayRow {
+    position: relative;
+    height: 22px;
+    display: flex;
+    align-items: center;
+}
+
+.ganttDayLabel {
+    position: absolute;
+    font-size: 10px;
+    color: #d1d5db;
+    transform: translateX(-50%);
+}
+
+.ganttDayLabel.today {
+    color: transparent;
+}
+
+/* 오늘 날짜 마크 (빨간 원) */
+.ganttTodayMark {
+    position: absolute;
+    top: 33px;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background-color: #ef4444;
+    color: #ffffff;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 600;
+    z-index: 5;
+}
+
+/* ============================================
+   차트 영역
+   ============================================ */
+.ganttChartArea {
+    flex: 1;
+    position: relative;
+    overflow: auto;
+}
+
+.ganttChartInner {
+    position: relative;
+    min-height: 100%;
+}
+
+.ganttChartRows {
+    position: relative;
+}
+
+.ganttChartRow {
+    height: 32px;
+    border-bottom: 1px solid #f8f8f7;
+    position: relative;
+}
+
+/* 오늘 날짜 선 */
+.ganttTodayLine {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background-color: #ef4444;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* 간트 바 */
+.ganttBar {
+    position: absolute;
+    height: 22px;
+    top: 5px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding: 0 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    cursor: pointer;
+    z-index: 5;
+    transition: filter 0.15s;
+    gap: 4px;
+    overflow: visible;
+    /* 내부 요소가 밖으로 나갈 수 있게 변경 */
+    box-sizing: border-box;
+    /* 너비 계산 고정 */
+}
+
+.ganttBar:hover {
+    filter: brightness(0.95);
+    z-index: 30;
+    /* Hover시 위로 올라오도록 */
+}
+
+/* 바 색상들 */
+.ganttBar.planning {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+}
+
+.ganttBar.development {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.ganttBar.review {
+    background-color: #e5e7eb;
+    color: #6b7280;
+}
+
+.ganttBar.completed {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+/* 내부 텍스트 래퍼 */
+.ganttBarContent {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+/* 바 바깥으로 넘치는 텍스트 */
+.ganttBarOverflowText {
+    position: absolute;
+    left: 100%;
+    margin-left: 6px;
+    white-space: nowrap;
+    color: #374151;
+    font-size: 11px;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.ganttBarStatus {
+    padding: 1px 4px;
+    font-size: 9px;
+    font-weight: 500;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.ganttBarStatus.planning {
+    background-color: #93c5fd;
+    color: #1e40af;
+}
+
+.ganttBarStatus.development {
+    background-color: #fcd34d;
+    color: #78350f;
+}
+
+.ganttBarStatus.review {
+    background-color: #d1d5db;
+    color: #4b5563;
+}
+
+.ganttBarStatus.completed {
+    background-color: #86efac;
+    color: #14532d;
+}
+
+/* 기간 오버레이 (헤더에 표시) */
+.ganttHeaderPeriodOverlay {
+    position: absolute;
+    top: 22px;
+    /* 두 번째 줄(일자) 위에 표시 */
+    height: 20px;
+    /* 일자 줄 높이와 거의 같게 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    z-index: 20;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+    padding: 0 4px;
+    pointer-events: none;
+    box-sizing: border-box;
+    /* 너비 계산 고정 */
+}
+
+.ganttHeaderPeriodOverlay.wide {
+    justify-content: space-between;
+}
+
+/* 기간 오버레이 (Hover시 표시) */
+.ganttDateOverlay {
+    position: absolute;
+    top: -26px;
+    /* 바 바로 위 */
+    left: 0;
+    white-space: nowrap;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #374151;
+    z-index: 40;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    pointer-events: none;
+    display: none;
+}
+
+/* 바에 hover하면 오버레이 표시 */
+.ganttBar:hover .ganttDateOverlay {
+    display: block;
+}
+
+/* ============================================
+   빈 상태
+   ============================================ */
+.ganttEmptyState {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100px;
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+/* ============================================
+   스크롤바 커스텀
+   ============================================ */
+.ganttChartArea::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.ganttChartArea::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ganttChartArea::-webkit-scrollbar-thumb {
+    background-color: #d4d4d0;
+    border-radius: 3px;
+}
+
+.ganttChartArea::-webkit-scrollbar-thumb:hover {
+    background-color: #b4b4b0;
+}
