@@ -16,8 +16,60 @@ description: Tailwind CSS 스타일링 규칙 및 가이드라인
    - 예: `GanttChart.tsx` → `GanttChart.module.css`
 
 3. **CSS 파일 구조**
-   - CSS 파일 상단에 반드시 `@import "tailwindcss";`를 선언한다.
-   - 모든 스타일은 `@apply` 지시어를 사용하여 Tailwind utility class를 적용한다.
+   - **전역 CSS (globals.css)에서만** `@import "tailwindcss";`를 선언한다.
+   - 전역 CSS에서는 `@apply` 지시어를 사용하여 Tailwind utility class를 적용한다.
+
+## ⚠️ Module CSS와 Tailwind 제한사항
+
+### 🚨 중요: Module CSS에서 Tailwind 사용 불가
+
+**Module CSS 파일 (`*.module.css`)에서는 Tailwind를 사용할 수 없다.**
+
+- `@import "tailwindcss";` 사용 금지
+- `@apply` 지시어 사용 금지
+
+#### 이유
+CSS Modules는 "pure selectors"를 요구하는데, Tailwind의 기본 스타일에는 `*`, `[hidden]` 등 전역 셀렉터가 포함되어 있어 빌드 에러가 발생한다.
+
+#### 에러 예시
+```
+Selector "*" is not pure. Pure selectors must contain at least one local class or id.
+Selector "[hidden]:where(:not([hidden="until-found"]))" is not pure.
+```
+
+### Module CSS 작성 방법 ✅
+
+Module CSS 파일에서는 **순수 CSS만 사용**한다:
+
+```css
+/* GanttCard.module.css - 순수 CSS 사용 */
+.ganttCardContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ganttCardHeader {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.ganttCardContent {
+  font-size: 16px;
+  color: #4b5563;
+}
+```
+
+### Tailwind 사용 가능한 곳 ✅
+
+| 파일 유형 | Tailwind 사용 | 비고 |
+|-----------|---------------|------|
+| `globals.css` | ✅ 가능 | `@import "tailwindcss";` + `@apply` 사용 |
+| `*.module.css` | ❌ 불가 | 순수 CSS만 사용 |
 
 ## className 네이밍 규칙
 
@@ -57,7 +109,7 @@ description: Tailwind CSS 스타일링 규칙 및 가이드라인
 - `styles.className` 형태로 접근 가능
 
 ```css
-/* GanttCard.module.css */
+/* GanttCard.module.css - 순수 CSS */
 .ganttContainer { }
 .ganttCardContainer { }
 .ganttHeader { }
@@ -93,22 +145,34 @@ export default function Page() {
 
 ### Module CSS 파일 (GanttCard.module.css)
 ```css
-@import "tailwindcss";
+/* ⚠️ @import "tailwindcss" 사용 금지! */
+/* ⚠️ @apply 사용 금지! */
 
 .ganttCardContainer {
-  @apply flex flex-col gap-4 p-6 rounded-lg shadow-md;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .ganttCardHeader {
-  @apply text-xl font-bold text-gray-800;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
 }
 
 .ganttCardContent {
-  @apply text-base text-gray-600;
+  font-size: 16px;
+  color: #4b5563;
 }
 
 .ganttCardFooter {
-  @apply flex justify-end gap-2 mt-4;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
 }
 ```
 
@@ -135,9 +199,9 @@ export default function GanttCard() {
 |------|------|
 | 스타일 위치 | CSS 파일에만 작성 |
 | CSS 타입 | 전역 CSS + Module CSS |
-| Tailwind 임포트 | `@import "tailwindcss";` |
-| 스타일 적용 | `@apply` 사용 |
+| Tailwind 임포트 | **전역 CSS에서만** `@import "tailwindcss";` |
+| @apply 사용 | **전역 CSS에서만** 사용 가능 |
+| Module CSS | **순수 CSS만** 사용 (Tailwind 사용 불가) |
 | 전역 CSS 네이밍 | 하이픈 연결 (예: `gantt-card-container`) |
 | Module CSS 네이밍 | 카멜케이스 (예: `ganttCardContainer`) |
 | 직접 utility class | 컴포넌트에서 사용 금지 |
-
