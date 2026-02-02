@@ -183,33 +183,56 @@ const mockTasks: LocalTask[] = [
  * 간트차트 옵션 설정
  */
 const ganttOptions: Partial<GanttChartOptions<LocalTask>> = {
+  // 좌측 패널(리스트) 영역 옵션 묶음
   headerLeft: {
+    // 헤더/날짜 표시 언어 포맷 (korean | english)
     dateDisplayFormat: 'korean',
+    // 좌측 리스트(타임라인 목록) 표시 여부
     showTimelineList: true,
+    // 좌측 패널 기본 펼침 여부
     defaultExpanded: false,
   },
+  // 우측 컨트롤(기간 셀렉트/Today/이동 버튼) 옵션 묶음
   headerRight: {
+    // 기간 선택 셀렉트 표시 여부
     showPeriodSelector: true,
-    selectedPeriod: 'year',
+    // 초기 선택 기간 단위 (year | quarter | month | week)
+    selectedPeriod: 'quarter',
+    // Today 버튼 표시 여부
     showTodayButton: true,
+    // 이전/다음 버튼 표시 여부
     showPrevNextButtons: true,
+    // 좌/우 네비게이션 버튼 표시 여부
     showNavigationButtons: true,
   },
+  // 헤더 공통 옵션 묶음
   header: {
+    // 헤더 날짜 표시 언어 포맷
     dateDisplayFormat: 'korean',
+    // Hover 기간 오버레이 스타일
     periodOverlayStyle: {
+      // 오버레이 배경색
       backgroundColor: '#f3f4f6',
+      // 오버레이 텍스트 색상
       color: '#374151',
+      // 오버레이 테두리 색상
       borderColor: '#e5e7eb',
+      // 오버레이 테두리 두께
       borderWidth: 1,
+      // 오버레이 테두리 스타일
       borderStyle: 'solid',
     },
   },
+  // 차트 바디(그래프 영역) 옵션 묶음
   body: {
+    // 오늘 세로선 표시 여부
     showTodayLine: true,
+    // 막대 내부 렌더: 사용자 정의 컴포넌트 (없으면 빈 상태)
     renderBarContents: (task) => (
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {/* 사용자 데이터 텍스트 예시 */}
         <span style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{task.title}</span>
+        {/* 사용자 데이터 태그 예시 */}
         <span
           style={{
             padding: '1px 4px',
@@ -224,23 +247,35 @@ const ganttOptions: Partial<GanttChartOptions<LocalTask>> = {
         </span>
       </div>
     ),
+    // 막대 스타일 지정 (색상/아웃라인)
     getBarStyle: (task) => ({
+      // 막대 배경색
       backgroundColor: '#f3f4f6',
+      // 막대 텍스트 색상
       color: 'inherit',
+      // 막대 테두리 색상
       borderColor: '#e5e7eb',
+      // 막대 테두리 두께
       borderWidth: 1,
+      // 막대 테두리 스타일
       borderStyle: 'solid',
     }),
   },
+  // 하단 컨트롤(스크롤바/이동 버튼) 옵션 묶음
   bottom: {
+    // 좌우 이동 버튼 표시 여부
     showNavigationButtons: true,
+    // 하단 스크롤바 표시 여부
     showScrollbar: true,
   },
+  // 좌측 패널 아이템 렌더: 사용자 정의 컴포넌트
   renderLeftPanelContents: (task) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      {/* 좌측 리스트 텍스트 예시 */}
       <span style={{ fontSize: '13px', color: '#374151', whiteSpace: 'nowrap' }}>
         {task.title}
       </span>
+      {/* 좌측 리스트 태그 예시 */}
       <span
         style={{
           padding: '2px 6px',

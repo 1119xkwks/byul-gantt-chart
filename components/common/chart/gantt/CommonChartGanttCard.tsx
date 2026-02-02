@@ -32,7 +32,6 @@ const defaultOptions: GanttChartOptions<unknown> = {
     /** 우측 컨트롤(기간 선택, Today, 이동 버튼 등) 설정 */
     headerRight: {
         showPeriodSelector: true,
-        selectedPeriod: 'year',
         showTodayButton: true,
         showPrevNextButtons: true,
         showNavigationButtons: true,
@@ -68,7 +67,7 @@ export default function CommonChartGanttCard<T>({
     todayScrollPositionRatio = 0.5,
     options: propsOptions,
 }: CommonChartGanttCardProps<T>) {
-    // 옵션 병합
+    // 옵션 병합: 기본값 + 사용자 옵션 합성
     const options = useMemo(() => ({
         ...defaultOptions,
         ...propsOptions,
@@ -79,17 +78,50 @@ export default function CommonChartGanttCard<T>({
         bottom: { ...defaultOptions.bottom, ...propsOptions?.bottom },
     }) as GanttChartOptions<T>, [propsOptions]);
 
-    // 기간 선택 State
-    const [selectedPeriod, setSelectedPeriod] = useState<PeriodUnit>(options.headerRight.selectedPeriod);
+    // 데이터 범위로 기간 단위를 자동 결정 (selectedPeriod 미지정 시)
+    const derivedPeriod = useMemo<PeriodUnit>(() => {
+        if (tasks.length === 0) return 'year';
+        const startDates = tasks.map(task => dayjs(getTaskStartDate(task)));
+        const endDates = tasks.map(task => dayjs(getTaskEndDate(task)));
+        const minStart = startDates.reduce((min, current) => (current.isBefore(min) ? current : min), startDates[0]);
+        const maxEnd = endDates.reduce((max, current) => (current.isAfter(max) ? current : max), endDates[0]);
+        const rangeDays = maxEnd.diff(minStart, 'day');
+        if (rangeDays < 30) return 'week';
+        if (rangeDays < 90) return 'month';
+        if (rangeDays < 365) return 'quarter';
+        return 'year';
+    }, [tasks, getTaskStartDate, getTaskEndDate]);
 
-    // 현재 Period에 따른 DAY_WIDTH
+    // 기간 선택 State: 사용자가 수동 변경한 경우 자동 변경 방지
+    const [selectedPeriod, setSelectedPeriod] = useState<PeriodUnit>(
+        options.headerRight.selectedPeriod ?? derivedPeriod
+    );
+    const userSelectedPeriodRef = useRef(false);
+
+    // 현재 Period에 따른 DAY_WIDTH (스케일 기준)
     const DAY_WIDTH = DAY_WIDTH_BY_PERIOD[selectedPeriod] || 4;
 
+    // 드롭다운 옵션 목록 (없으면 기본 4종)
     const periodOptions = useMemo(() => {
         return (options.headerRight.periodOptions && options.headerRight.periodOptions.length > 0)
             ? options.headerRight.periodOptions
             : DEFAULT_PERIOD_OPTIONS;
     }, [options.headerRight.periodOptions]);
+
+    // 자동 선택: selectedPeriod가 없을 때만 데이터 기준으로 반영
+    useEffect(() => {
+        if (!options.headerRight.selectedPeriod && !userSelectedPeriodRef.current) {
+            setSelectedPeriod(derivedPeriod);
+        }
+    }, [derivedPeriod, options.headerRight.selectedPeriod]);
+
+    // 옵션 목록이 바뀌면 유효한 값으로 보정
+    useEffect(() => {
+        if (periodOptions.length === 0) return;
+        if (!periodOptions.includes(selectedPeriod)) {
+            setSelectedPeriod(periodOptions[0]);
+        }
+    }, [periodOptions, selectedPeriod]);
 
     // 좌측 패널 열림/닫힘 상태
     const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(
@@ -156,7 +188,7 @@ export default function CommonChartGanttCard<T>({
         };
     }, [chartRange, DAY_WIDTH]);
 
-    // 바 위치 계산 함수
+    // 바 위치 계산 함수: accessors로 start/end를 읽어 좌표 산출
     const calculateBarPosition = useCallback((task: T) => {
         const startDayjs = dayjs(chartRange.start).startOf('day');
         const taskStart = dayjs(getTaskStartDate(task)).startOf('day');
@@ -190,7 +222,7 @@ export default function CommonChartGanttCard<T>({
         return dates;
     }, []);
 
-    // 스크롤 위치에 따른 오버레이 년월 + 뷰포트 상태 업데이트
+    // 스크롤 위치에 따른 오버레이 년월 + 뷰포트 상태 업데이트 (헤더 표시 동기화 기준)
     const updateOverlayYearMonth = useCallback(() => {
         if (!chartAreaRef.current) return;
 
@@ -207,7 +239,7 @@ export default function CommonChartGanttCard<T>({
         setOverlayYearMonth(overlayStr);
     }, [chartRange.start, DAY_WIDTH]);
 
-    // 스크롤 동기화 & 뷰포트/오버플로우 상태 업데이트
+    // 스크롤 동기화: 헤더 x축 + 좌측 패널 y축 + 오버플로우 계산
     useEffect(() => {
         const chartArea = chartAreaRef.current;
         const timelineHeader = timelineHeaderRef.current;
@@ -230,6 +262,7 @@ export default function CommonChartGanttCard<T>({
         return () => chartArea.removeEventListener('scroll', handleScroll);
     }, [chartRange, updateOverlayYearMonth, syncLeftPanelScroll]);
 
+    // 좌측 패널 wheel 입력을 차트 영역 스크롤로 전달 (동기화 모드 전용)
     useEffect(() => {
         const leftPanelList = leftPanelListRef.current;
         if (!leftPanelList || !syncLeftPanelScroll) return;
@@ -241,7 +274,7 @@ export default function CommonChartGanttCard<T>({
         return () => leftPanelList.removeEventListener('wheel', handleWheel);
     }, [syncLeftPanelScroll]);
 
-    // 리사이즈 시 뷰포트 너비 갱신
+    // 리사이즈 시 뷰포트 너비 갱신 (헤더 표시 보정)
     useEffect(() => {
         const chartArea = chartAreaRef.current;
         if (!chartArea) return;
@@ -337,14 +370,14 @@ export default function CommonChartGanttCard<T>({
         moveToToday();
     }, [selectedPeriod, moveToToday]);
 
-    // Today 버튼 클릭 핸들러
+    // Today 버튼 클릭 핸들러 (todayScrollPositionRatio 반영)
     const handleTodayClick = () => {
         // Today 이동도 '중앙으로 가라'는 시그널이므로 moveToToday 호출로 범위 리셋 후 scrollTrigger
         moveToToday();
         setScrollTrigger(prev => prev + 1);
     };
 
-    // 사용자가 너비 크기 변경하면 Today 버튼 클릭 핸들러 호출
+    // 사용자가 너비 크기 변경하면 Today 이동 (옵션 on)
     useEffect(() => {
         const container = cardContainerRef.current;
         if (!container || !showTodayChartOnResize) return;
@@ -528,7 +561,10 @@ export default function CommonChartGanttCard<T>({
                                 <select
                                     className={styles.ganttSelect}
                                     value={selectedPeriod}
-                                    onChange={(e) => setSelectedPeriod(e.target.value as PeriodUnit)}
+                                    onChange={(e) => {
+                                        userSelectedPeriodRef.current = true;
+                                        setSelectedPeriod(e.target.value as PeriodUnit);
+                                    }}
                                 >
                                     {periodOptions.map((period) => (
                                         <option key={period} value={period}>

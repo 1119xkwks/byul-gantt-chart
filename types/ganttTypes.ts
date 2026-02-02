@@ -32,7 +32,7 @@ export interface GanttHeaderRightOptions {
     /** 기간 선택 드롭다운 표시 여부 */
     showPeriodSelector: boolean;
     /** 선택된 기간 단위 */
-    selectedPeriod: PeriodUnit;
+    selectedPeriod?: PeriodUnit;
     /** 기간 선택 옵션 목록 (미지정 시 기본 4종) */
     periodOptions?: PeriodUnit[];
     /** Today 버튼 표시 여부 */
