@@ -593,14 +593,14 @@ export default function CommonChartGanttCard<T>({
                                 onClick={handlePagePrevNew}
                                 title="이전 기간"
                             >
-                                &lt;&lt;
+                                ‹‹
                             </button>
                             <button
                                 className={styles.ganttHeaderButton}
                                 onClick={handleScrollLeft}
                                 title="스크롤 왼쪽"
                             >
-                                &lt;
+                                ‹
                             </button>
                             <button
                                 className={styles.ganttTodayButton}
@@ -613,14 +613,14 @@ export default function CommonChartGanttCard<T>({
                                 onClick={handleScrollRight}
                                 title="스크롤 오른쪽"
                             >
-                                &gt;
+                                ›
                             </button>
                             <button
                                 className={styles.ganttHeaderButton}
                                 onClick={handlePageNextNew}
                                 title="다음 기간"
                             >
-                                &gt;&gt;
+                                ››
                             </button>
                         </div>
                     </div>
