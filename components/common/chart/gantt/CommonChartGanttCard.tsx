@@ -3,43 +3,51 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import dayjs from 'dayjs';
 import styles from './CommonChartGanttCard.module.css';
-import { GanttTask, GanttChartOptions, CommonChartGanttCardProps, PeriodUnit } from '@/types/ganttTypes';
+import { GanttChartOptions, CommonChartGanttCardProps, PeriodUnit } from '@/types/ganttTypes';
 import { getMonthsBetween, getDaysInMonth, daysBetween } from '@/utils/dateUtils';
 
 // Period별 하루당 픽셀 너비
 const DAY_WIDTH_BY_PERIOD: Record<PeriodUnit, number> = {
-    'Hours': 100,
-    'Day': 50,
-    'Week': 40,    // 100 -> 40 축소
-    'Bi-week': 12,
-    'Month': 15,   // 40 -> 15 축소 (숫자가 겹치지 않는 선)
-    'Quarter': 6,  // 15 -> 6 축소
-    'Year': 4,     // 유지
-    '5 Years': 1,
+    'week': 40,    // 100 -> 40 축소
+    'month': 15,   // 40 -> 15 축소 (숫자가 겹치지 않는 선)
+    'quarter': 6,  // 15 -> 6 축소
+    'year': 4,     // 유지
 };
 
+const DEFAULT_PERIOD_OPTIONS: PeriodUnit[] = ['year', 'quarter', 'month', 'week'];
+
 // 기본 옵션
-const defaultOptions: GanttChartOptions = {
+/**
+ * 기본 옵션
+ * - props로 전달되는 options와 병합되어 실제 동작 옵션이 된다.
+ * - 공통 컴포넌트에서 기본값을 명시해두기 위한 설정.
+ */
+const defaultOptions: GanttChartOptions<unknown> = {
+    /** 좌측 리스트 영역 설정 */
     headerLeft: {
         dateDisplayFormat: 'korean',
         showTimelineList: true,
         defaultExpanded: false,
     },
+    /** 우측 컨트롤(기간 선택, Today, 이동 버튼 등) 설정 */
     headerRight: {
         showPeriodSelector: true,
-        selectedPeriod: 'Year',
+        selectedPeriod: 'year',
         showTodayButton: true,
         showPrevNextButtons: true,
         showNavigationButtons: true,
     },
+    /** 헤더 공통 표시 방식(날짜 포맷, 기간 단위) 설정 */
     header: {
         dateDisplayFormat: 'korean',
-        selectedPeriod: 'Year',
+        selectedPeriod: 'year',
     },
+    /** 바디(차트 영역) 설정 */
     body: {
+        /** 오늘 날짜 세로선 표시 여부 */
         showTodayLine: true,
-        barContentDisplay: 'title',
     },
+    /** 하단 컨트롤(스크롤바, 좌우 이동 버튼) 설정 */
     bottom: {
         showNavigationButtons: true,
         showScrollbar: true,
@@ -50,7 +58,13 @@ const defaultOptions: GanttChartOptions = {
  * CommonChartGanttCard
  * Notion 스타일 간트차트 컴포넌트
  */
-export default function CommonChartGanttCard({ tasks, options: propsOptions }: CommonChartGanttCardProps) {
+export default function CommonChartGanttCard<T>({
+    tasks,
+    getTaskId,
+    getTaskStartDate,
+    getTaskEndDate,
+    options: propsOptions,
+}: CommonChartGanttCardProps<T>) {
     // 옵션 병합
     const options = useMemo(() => ({
         ...defaultOptions,
@@ -60,13 +74,19 @@ export default function CommonChartGanttCard({ tasks, options: propsOptions }: C
         header: { ...defaultOptions.header, ...(propsOptions as any)?.header },
         body: { ...defaultOptions.body, ...propsOptions?.body },
         bottom: { ...defaultOptions.bottom, ...propsOptions?.bottom },
-    }), [propsOptions]);
+    }) as GanttChartOptions<T>, [propsOptions]);
 
     // 기간 선택 State
     const [selectedPeriod, setSelectedPeriod] = useState<PeriodUnit>(options.header.selectedPeriod);
 
     // 현재 Period에 따른 DAY_WIDTH
     const DAY_WIDTH = DAY_WIDTH_BY_PERIOD[selectedPeriod] || 4;
+
+    const periodOptions = useMemo(() => {
+        return (options.headerRight.periodOptions && options.headerRight.periodOptions.length > 0)
+            ? options.headerRight.periodOptions
+            : DEFAULT_PERIOD_OPTIONS;
+    }, [options.headerRight.periodOptions]);
 
     // 좌측 패널 열림/닫힘 상태
     const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(
@@ -88,13 +108,21 @@ export default function CommonChartGanttCard({ tasks, options: propsOptions }: C
     });
 
     // 현재 마우스 오버된 태스크
-    const [hoveredTask, setHoveredTask] = useState<GanttTask | null>(null);
+    const [hoveredTask, setHoveredTask] = useState<T | null>(null);
+
+    // 스크롤/뷰포트 (오버플로우 버튼 표시용)
+    const [scrollLeftState, setScrollLeftState] = useState(0);
+    const [viewportWidth, setViewportWidth] = useState(0);
+    // 오버플로우 버튼 호버 시 툴팁 (taskId | null, 'left' | 'right' | null)
+    const [overflowTooltip, setOverflowTooltip] = useState<{ taskId: string; side: 'left' | 'right' } | null>(null);
 
     // Refs & State for Scroll Control
     const chartAreaRef = useRef<HTMLDivElement>(null);
     const timelineHeaderRef = useRef<HTMLDivElement>(null);
     const initialScrollDone = useRef(false);
     const [scrollTrigger, setScrollTrigger] = useState(0); // 스크롤 강제 트리거
+    /** 오버플로우 버튼으로 페이지를 넘긴 뒤, 새 범위에서 해당 막대로 스크롤하기 위한 대기 ref */
+    const pendingScrollToTaskRef = useRef<{ task: T; side: 'left' | 'right' } | null>(null);
 
     // 월 목록
     const months = useMemo(() => {
@@ -106,26 +134,28 @@ export default function CommonChartGanttCard({ tasks, options: propsOptions }: C
         return daysBetween(chartRange.start, chartRange.end) + 1;
     }, [chartRange]);
 
+
     // 오늘 날짜 정보
     const todayInfo = useMemo(() => {
         const today = dayjs().startOf('day');
         const startDayjs = dayjs(chartRange.start).startOf('day');
         const daysDiff = today.diff(startDayjs, 'day');
+        const position = daysDiff * DAY_WIDTH + (DAY_WIDTH / 2);
         return {
             date: today,
             dayOfMonth: today.date(),
             month: today.month(),
             year: today.year(),
-            position: daysDiff * DAY_WIDTH + (DAY_WIDTH / 2),
+            position,
             dayIndex: daysDiff,
         };
     }, [chartRange, DAY_WIDTH]);
 
     // 바 위치 계산 함수
-    const calculateBarPosition = useCallback((task: GanttTask) => {
+    const calculateBarPosition = useCallback((task: T) => {
         const startDayjs = dayjs(chartRange.start).startOf('day');
-        const taskStart = dayjs(task.startDate).startOf('day');
-        const taskEnd = dayjs(task.endDate).startOf('day');
+        const taskStart = dayjs(getTaskStartDate(task)).startOf('day');
+        const taskEnd = dayjs(getTaskEndDate(task)).startOf('day');
 
         const startDiff = taskStart.diff(startDayjs, 'day');
         const duration = taskEnd.diff(taskStart, 'day') + 1;
@@ -139,21 +169,7 @@ export default function CommonChartGanttCard({ tasks, options: propsOptions }: C
             leftOverflow: left < 0,
             rightOverflow: left + width > totalDays * DAY_WIDTH,
         };
-    }, [chartRange, totalDays, DAY_WIDTH]);
-
-    // 상태 클래스 반환
-    const getStatusClass = (status: string) => {
-        const map: Record<string, string> = {
-            'Planning': 'planning',
-            'Development': 'development',
-            'Review': 'review',
-            'Completed': 'completed',
-            '진행중': 'development',
-            '완료': 'completed',
-            '대기': 'planning',
-        };
-        return map[status] || 'planning';
-    };
+    }, [chartRange, totalDays, DAY_WIDTH, getTaskStartDate, getTaskEndDate]);
 
     // 주간 날짜 목록 생성 (1, 8, 15, 22, 29...)
     const getWeeklyDates = useCallback((month: Date) => {
@@ -169,21 +185,24 @@ export default function CommonChartGanttCard({ tasks, options: propsOptions }: C
         return dates;
     }, []);
 
-    // 스크롤 위치에 따른 오버레이 년월 업데이트
+    // 스크롤 위치에 따른 오버레이 년월 + 뷰포트 상태 업데이트
     const updateOverlayYearMonth = useCallback(() => {
         if (!chartAreaRef.current) return;
 
-        const scrollLeft = chartAreaRef.current.scrollLeft;
+        const el = chartAreaRef.current;
+        const scrollLeft = el.scrollLeft;
         const startDate = dayjs(chartRange.start);
 
-        // 스크롤 위치를 날짜로 변환
+        setScrollLeftState(scrollLeft);
+        setViewportWidth(el.clientWidth);
+
         const daysFromStart = Math.floor(scrollLeft / DAY_WIDTH);
         const currentDate = startDate.add(daysFromStart, 'day');
-
-        setOverlayYearMonth(`${currentDate.month() + 1}월 ${currentDate.year()}`);
+        const overlayStr = `${currentDate.month() + 1}월 ${currentDate.year()}`;
+        setOverlayYearMonth(overlayStr);
     }, [chartRange.start, DAY_WIDTH]);
 
-    // 스크롤 동기화 & 무한 스크롤
+    // 스크롤 동기화 & 뷰포트/오버플로우 상태 업데이트
     useEffect(() => {
         const chartArea = chartAreaRef.current;
         const timelineHeader = timelineHeaderRef.current;
@@ -191,57 +210,85 @@ export default function CommonChartGanttCard({ tasks, options: propsOptions }: C
         if (!chartArea || !timelineHeader) return;
 
         const handleScroll = () => {
-            // 헤더 스크롤 동기화
             timelineHeader.scrollLeft = chartArea.scrollLeft;
-
-            // 오버레이 년월 업데이트
             updateOverlayYearMonth();
         };
 
         chartArea.addEventListener('scroll', handleScroll);
+        updateOverlayYearMonth();
         return () => chartArea.removeEventListener('scroll', handleScroll);
     }, [chartRange, updateOverlayYearMonth]);
 
-    // 초기 스크롤 및 Today 이동 처리 (변경 없음)
+    // 리사이즈 시 뷰포트 너비 갱신
+    useEffect(() => {
+        const chartArea = chartAreaRef.current;
+        if (!chartArea) return;
+        const ro = new ResizeObserver(() => updateOverlayYearMonth());
+        ro.observe(chartArea);
+        return () => ro.disconnect();
+    }, [updateOverlayYearMonth]);
+
+    // 초기 스크롤, 페이징 후 중앙 이동, 오버플로우로 인한 페이지 이동 후 막대 스크롤
     useEffect(() => {
         if (!chartAreaRef.current) return;
 
-        // 초기 로드이거나 scrollTrigger가 변경되었을 때 스크롤 이동
         if (!initialScrollDone.current || scrollTrigger > 0) {
-            // DOM 렌더링 후 정확한 위치 계산을 위해 약간의 지연 추가
             const timer = setTimeout(() => {
-                if (chartAreaRef.current) {
-                    const chartArea = chartAreaRef.current;
+                const chartArea = chartAreaRef.current;
+                if (!chartArea) return;
 
-                    // 항상 차트 전체 범위의 정중앙으로 이동
-                    // Today 버튼: 오늘 기준 ±2.5년이므로 중앙이 오늘
-                    // 페이징: 2.5년씩 이동하므로 이동한 범위의 중앙이 새로운 중심점
-                    const centerScroll = (chartArea.scrollWidth - chartArea.clientWidth) / 2;
-
-                    // 'auto'로 즉시 이동하여 사용자 눈에 띄지 않게 함
-                    chartArea.scrollTo({ left: Math.max(0, centerScroll), behavior: 'auto' });
-
-                    initialScrollDone.current = true;
+                const pending = pendingScrollToTaskRef.current;
+                if (pending) {
+                    pendingScrollToTaskRef.current = null;
+                    const { task, side } = pending;
+                    const config = getPeriodConfig(selectedPeriod);
+                    const startDayjs = dayjs(chartRange.start).startOf('day');
+                    const taskStart = dayjs(getTaskStartDate(task)).startOf('day');
+                    const taskEnd = dayjs(getTaskEndDate(task)).startOf('day');
+                    const startDiff = taskStart.diff(startDayjs, 'day');
+                    const duration = taskEnd.diff(taskStart, 'day') + 1;
+                    const left = startDiff * DAY_WIDTH;
+                    const width = duration * DAY_WIDTH;
+                    const pad = 16;
+                    const targetLeft = side === 'left'
+                        ? left - pad
+                        : left + width - chartArea.clientWidth + pad;
+                    chartArea.scrollTo({
+                        left: Math.max(0, Math.min(chartArea.scrollWidth - chartArea.clientWidth, targetLeft)),
+                        behavior: 'smooth',
+                    });
                     updateOverlayYearMonth();
+                    return;
                 }
+
+                const scrollWidth = chartArea.scrollWidth;
+                const clientWidth = chartArea.clientWidth;
+                const centerScroll = (scrollWidth - clientWidth) / 2;
+                const todayPositionPx = todayInfo.position;
+                const todayScroll = todayPositionPx - (clientWidth / 2);
+                const todayInRange = todayPositionPx >= 0 && todayPositionPx <= scrollWidth;
+                const targetScroll = todayInRange ? todayScroll : centerScroll;
+                chartArea.scrollTo({ left: Math.max(0, Math.min(scrollWidth - clientWidth, targetScroll)), behavior: 'auto' });
+                initialScrollDone.current = true;
+                updateOverlayYearMonth();
             }, 200);
 
             return () => clearTimeout(timer);
         }
-    }, [todayInfo.position, updateOverlayYearMonth, scrollTrigger, DAY_WIDTH]);
+    }, [todayInfo.position, updateOverlayYearMonth, scrollTrigger, DAY_WIDTH, chartRange.start, selectedPeriod]);
 
     // 무한 스크롤 관련 스크롤 보정 useEffect 제거됨
 
     // 기간별 설정 반환 로직 (Move Unit 등)
     const getPeriodConfig = (period: PeriodUnit): { unit: dayjs.ManipulateType; halfRange: number; moveAmount: number } => {
         switch (period) {
-            case 'Year':
+            case 'year':
                 return { unit: 'month', halfRange: 30, moveAmount: 30 }; // ±2.5년
-            case 'Quarter':
+            case 'quarter':
                 return { unit: 'month', halfRange: 12, moveAmount: 12 }; // ±1년 (4분기)
-            case 'Month':
+            case 'month':
                 return { unit: 'month', halfRange: 6, moveAmount: 6 };   // ±6개월
-            case 'Week':
+            case 'week':
                 return { unit: 'week', halfRange: 4, moveAmount: 4 };    // ±4주
             default:
                 return { unit: 'month', halfRange: 6, moveAmount: 6 };
@@ -345,6 +392,52 @@ export default function CommonChartGanttCard({ tasks, options: propsOptions }: C
         }
     };
 
+    /** 오버플로우 버튼 클릭 시 해당 막대가 보이도록 스크롤. 막대가 현재 페이지 밖이면 차트 범위를 넘긴 뒤 스크롤 */
+    const scrollToShowBar = useCallback((task: T, side: 'left' | 'right') => {
+        const chartArea = chartAreaRef.current;
+        if (!chartArea) return;
+        const barPos = calculateBarPosition(task);
+        const contentWidth = totalDays * DAY_WIDTH;
+        const pad = 16;
+
+        const barLeft = barPos.left;
+        const barRight = barPos.left + barPos.width;
+
+        if (side === 'left' && barLeft < 0) {
+            const config = getPeriodConfig(selectedPeriod);
+            const pivot = dayjs(getTaskStartDate(task));
+            const newStart = pivot.subtract(config.halfRange, config.unit)
+                .startOf(config.unit === 'week' ? 'week' : 'month')
+                .format('YYYY-MM-DD');
+            const newEnd = pivot.add(config.halfRange, config.unit)
+                .endOf(config.unit === 'week' ? 'week' : 'month')
+                .format('YYYY-MM-DD');
+            pendingScrollToTaskRef.current = { task, side: 'left' };
+            setChartRange({ start: newStart, end: newEnd });
+            setScrollTrigger(prev => prev + 1);
+            return;
+        }
+        if (side === 'right' && barRight > contentWidth) {
+            const config = getPeriodConfig(selectedPeriod);
+            const pivot = dayjs(getTaskEndDate(task));
+            const newStart = pivot.subtract(config.halfRange, config.unit)
+                .startOf(config.unit === 'week' ? 'week' : 'month')
+                .format('YYYY-MM-DD');
+            const newEnd = pivot.add(config.halfRange, config.unit)
+                .endOf(config.unit === 'week' ? 'week' : 'month')
+                .format('YYYY-MM-DD');
+            pendingScrollToTaskRef.current = { task, side: 'right' };
+            setChartRange({ start: newStart, end: newEnd });
+            setScrollTrigger(prev => prev + 1);
+            return;
+        }
+
+        const targetLeft = side === 'left'
+            ? Math.max(0, barPos.left - pad)
+            : Math.min(chartArea.scrollWidth - chartArea.clientWidth, barPos.left + barPos.width - chartArea.clientWidth + pad);
+        chartArea.scrollTo({ left: targetLeft, behavior: 'smooth' });
+    }, [calculateBarPosition, totalDays, DAY_WIDTH, selectedPeriod, getTaskStartDate, getTaskEndDate]);
+
     // 오늘이 표시 범위 내인지 확인
     const isTodayInRange = todayInfo.position > 0 && todayInfo.position < totalDays * DAY_WIDTH;
 
@@ -369,11 +462,8 @@ export default function CommonChartGanttCard({ tasks, options: propsOptions }: C
                         </div>
                     ) : (
                         tasks.map(task => (
-                            <div key={task.id} className={styles.ganttTaskRow}>
-                                <span className={styles.ganttTaskTitle}>{task.title}</span>
-                                <span className={`${styles.ganttTaskStatus} ${styles[getStatusClass(task.status)]}`}>
-                                    {task.status}
-                                </span>
+                            <div key={getTaskId(task)} className={styles.ganttTaskRow}>
+                                {options.renderLeftPanelContents ? options.renderLeftPanelContents(task) : null}
                             </div>
                         ))
                     )}
@@ -398,21 +488,25 @@ export default function CommonChartGanttCard({ tasks, options: propsOptions }: C
                                     value={selectedPeriod}
                                     onChange={(e) => setSelectedPeriod(e.target.value as PeriodUnit)}
                                 >
-                                    {options.header.dateDisplayFormat === 'korean' ? (
-                                        <>
-                                            <option value="Year">년별</option>
-                                            <option value="Quarter">분기</option>
-                                            <option value="Month">월</option>
-                                            <option value="Week">주</option>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <option value="Year">Year</option>
-                                            <option value="Quarter">Quarter</option>
-                                            <option value="Month">Month</option>
-                                            <option value="Week">Week</option>
-                                        </>
-                                    )}
+                                    {periodOptions.map((period) => (
+                                        <option key={period} value={period}>
+                                            {options.header.dateDisplayFormat === 'korean'
+                                                ? (period === 'year'
+                                                    ? '년별'
+                                                    : period === 'quarter'
+                                                        ? '분기'
+                                                        : period === 'month'
+                                                            ? '월'
+                                                            : '주')
+                                                : (period === 'year'
+                                                    ? 'Year'
+                                                    : period === 'quarter'
+                                                        ? 'Quarter'
+                                                        : period === 'month'
+                                                            ? 'Month'
+                                                            : 'Week')}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
 
@@ -476,12 +570,14 @@ export default function CommonChartGanttCard({ tasks, options: propsOptions }: C
                             // 너비가 충분히 넓으면 양쪽 끝 정렬 (100px 기준)
                             const isWide = width >= 100;
 
+                            const hoveredStartDate = getTaskStartDate(hoveredTask);
+                            const hoveredEndDate = getTaskEndDate(hoveredTask);
                             const startDateStr = options.header.dateDisplayFormat === 'english'
-                                ? dayjs(hoveredTask.startDate).format('MMM D')
-                                : dayjs(hoveredTask.startDate).format('M월 D일');
+                                ? dayjs(hoveredStartDate).format('MMM D')
+                                : dayjs(hoveredStartDate).format('M월 D일');
                             const endDateStr = options.header.dateDisplayFormat === 'english'
-                                ? dayjs(hoveredTask.endDate).format('MMM D')
-                                : dayjs(hoveredTask.endDate).format('M월 D일');
+                                ? dayjs(hoveredEndDate).format('MMM D')
+                                : dayjs(hoveredEndDate).format('M월 D일');
 
                             return (
                                 <div
@@ -492,6 +588,11 @@ export default function CommonChartGanttCard({ tasks, options: propsOptions }: C
                                         // 좁은 모드면 텍스트 길이에 따라 늘어남
                                         width: isWide ? `${width}px` : 'fit-content',
                                         minWidth: isWide ? '0' : `${width}px`,
+                                        backgroundColor: options.header.periodOverlayStyle?.backgroundColor ?? '#f3f4f6',
+                                        color: options.header.periodOverlayStyle?.color,
+                                        borderColor: options.header.periodOverlayStyle?.borderColor,
+                                        borderWidth: options.header.periodOverlayStyle?.borderWidth,
+                                        borderStyle: options.header.periodOverlayStyle?.borderStyle,
                                     }}
                                 >
                                     {isWide ? (
@@ -564,33 +665,90 @@ export default function CommonChartGanttCard({ tasks, options: propsOptions }: C
                         <div className={styles.ganttChartRows}>
                             {tasks.map(task => {
                                 const barPosition = calculateBarPosition(task);
+                                const barLeft = barPosition.left;
+                                const barWidth = Math.max(barPosition.width, 20);
+                                const barRight = barLeft + barWidth;
+                                const visibleLeft = scrollLeftState;
+                                const visibleRight = scrollLeftState + viewportWidth;
+                                const leftOverflow = barLeft < visibleLeft;
+                                const rightOverflow = barRight > visibleRight;
+
+                                const overflowButtonWidth = 22;
+                                const overflowButtonOffset = 4;
+                                const leftButtonLeft = visibleLeft - barLeft + overflowButtonOffset;
+                                const rightButtonLeft = visibleRight - barLeft - overflowButtonWidth - overflowButtonOffset;
+
+                                const periodTooltipStr = options.header.dateDisplayFormat === 'english'
+                                    ? `${dayjs(getTaskStartDate(task)).format('MMM D')} → ${dayjs(getTaskEndDate(task)).format('MMM D')}`
+                                    : `${dayjs(getTaskStartDate(task)).format('M월 D일')} → ${dayjs(getTaskEndDate(task)).format('M월 D일')}`;
+
+                                const barStyle = options.body.getBarStyle?.(task);
+                                const hasCustomBackground = Boolean(barStyle?.backgroundColor);
+                                const barBackground = hasCustomBackground ? barStyle?.backgroundColor : '#f3f4f6';
+                                const barColor = barStyle?.color;
+                                const hasCustomOutline = barStyle?.borderColor || barStyle?.borderWidth || barStyle?.borderStyle;
+                                const outlineColor = barStyle?.borderColor ?? '#e5e7eb';
+                                const outlineWidth = barStyle?.borderWidth ?? 1;
+                                const outlineStyleType = barStyle?.borderStyle ?? 'solid';
+                                const outlineStyle = hasCustomOutline
+                                    ? (outlineStyleType === 'solid'
+                                        ? { boxShadow: `inset 0 0 0 ${outlineWidth}px ${outlineColor}` }
+                                        : { borderColor: outlineColor, borderWidth: outlineWidth, borderStyle: outlineStyleType })
+                                    : { boxShadow: 'inset 0 0 0 1px #e5e7eb' };
 
                                 return (
-                                    <div key={task.id} className={styles.ganttChartRow}>
+                                    <div key={getTaskId(task)} className={styles.ganttChartRow}>
                                         <div
-                                            className={`${styles.ganttBar} ${styles[getStatusClass(task.status)]}`}
+                                            className={styles.ganttBar}
                                             style={{
                                                 left: `${barPosition.left}px`,
-                                                width: `${Math.max(barPosition.width, 20)}px`,
+                                                width: `${barWidth}px`,
+                                                backgroundColor: barBackground,
+                                                color: barColor,
+                                                ...outlineStyle,
                                             }}
                                             onMouseEnter={() => setHoveredTask(task)}
                                             onMouseLeave={() => setHoveredTask(null)}
                                         >
+                                            {/* 바 내부 컨텐츠: 사용자 정의 render 옵션 또는 기본 데이터 이름 (스토리보드 10) */}
+                                            {options.body.renderBarContents ? options.body.renderBarContents(task) : null}
 
-                                            {/* 바 내부 컨텐츠 (너비가 충분할 때만 타이틀 표시) */}
-                                            {barPosition.width >= 60 && (
-                                                <span className={styles.ganttBarContent}>{task.title}</span>
+                                            {/* 좌측 오버플로우 버튼: 막대가 왼쪽으로 잘릴 때 */}
+                                            {leftOverflow && (
+                                                <button
+                                                    type="button"
+                                                    className={styles.ganttBarOverflowButton}
+                                                    style={{ left: `${leftButtonLeft}px` }}
+                                                    onClick={(e) => { e.stopPropagation(); scrollToShowBar(task, 'left'); }}
+                                                    onMouseEnter={() => setOverflowTooltip({ taskId: getTaskId(task), side: 'left' })}
+                                                    onMouseLeave={() => setOverflowTooltip(null)}
+                                                    title={periodTooltipStr}
+                                                    aria-label="좌측으로 스크롤하여 막대 전체 보기"
+                                                >
+                                                    ←
+                                                    {overflowTooltip?.taskId === getTaskId(task) && overflowTooltip?.side === 'left' && (
+                                                        <span className={styles.ganttBarOverflowTooltip}>{periodTooltipStr}</span>
+                                                    )}
+                                                </button>
                                             )}
 
-                                            {(options.body.barContentDisplay === 'status' || options.body.barContentDisplay === 'both') && (
-                                                <span className={`${styles.ganttBarStatus} ${styles[getStatusClass(task.status)]}`}>
-                                                    {task.status}
-                                                </span>
-                                            )}
-
-                                            {/* 바깥 텍스트 (너비가 좁을 때 표시) */}
-                                            {barPosition.width < 60 && (
-                                                <span className={styles.ganttBarOverflowText}>{task.title}</span>
+                                            {/* 우측 오버플로우 버튼: 막대가 오른쪽으로 잘릴 때 */}
+                                            {rightOverflow && (
+                                                <button
+                                                    type="button"
+                                                    className={`${styles.ganttBarOverflowButton} ${styles.ganttBarOverflowButtonRight}`}
+                                                    style={{ left: `${rightButtonLeft}px` }}
+                                                    onClick={(e) => { e.stopPropagation(); scrollToShowBar(task, 'right'); }}
+                                                    onMouseEnter={() => setOverflowTooltip({ taskId: getTaskId(task), side: 'right' })}
+                                                    onMouseLeave={() => setOverflowTooltip(null)}
+                                                    title={periodTooltipStr}
+                                                    aria-label="우측으로 스크롤하여 막대 전체 보기"
+                                                >
+                                                    →
+                                                    {overflowTooltip?.taskId === getTaskId(task) && overflowTooltip?.side === 'right' && (
+                                                        <span className={styles.ganttBarOverflowTooltip}>{periodTooltipStr}</span>
+                                                    )}
+                                                </button>
                                             )}
                                         </div>
                                     </div>

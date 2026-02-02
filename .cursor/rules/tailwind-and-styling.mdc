@@ -1,0 +1,47 @@
+---
+description: Tailwind CSS 및 Module CSS 스타일링 규칙, className 네이밍
+globs: **/*.css, **/*.tsx
+---
+
+# Tailwind CSS 스타일링 규칙
+
+## 기본 원칙
+
+1. **모든 스타일은 CSS 파일에 작성한다**
+   - 컴포넌트(TSX/JSX)에 Tailwind utility class를 직접 사용하지 않는다.
+   - 스타일은 별도의 CSS 파일에서 관리한다.
+
+2. **Module CSS 사용**
+   - 구역별 컴포넌트는 해당 컴포넌트 전용 module CSS 사용.
+   - 예: GanttChart.tsx → GanttChart.module.css
+
+3. **CSS 파일 구조**
+   - 전역 CSS (globals.css)에서만 `@import "tailwindcss";` 선언.
+   - 전역 CSS에서만 `@apply` 지시어 사용.
+
+## Module CSS에서 Tailwind 사용 불가
+
+- `*.module.css`에서는 `@import "tailwindcss";` 및 `@apply` 사용 금지.
+- CSS Modules는 pure selectors 요구로 Tailwind 기본 스타일과 충돌해 빌드 에러 발생.
+- Module CSS에서는 순수 CSS만 사용 (display, flex-direction, gap, padding, border-radius, box-shadow, font-size, color 등).
+
+## Tailwind 사용 가능 여부
+
+| 파일 유형       | Tailwind 사용 |
+|----------------|---------------|
+| globals.css    | 가능 (@import + @apply) |
+| *.module.css   | 불가 (순수 CSS만) |
+
+## className 네이밍
+
+- UI 프레임워크와 충돌 방지를 위해 프로젝트 접두사 사용.
+- 전역/공통 CSS(globals.css): 하이픈 연결. 예: .gantt-container, .gantt-card-header
+- Module CSS (*.module.css): 카멜케이스. 예: .ganttContainer, .ganttCardHeader (styles.ganttCardContainer로 접근)
+
+## 코드 예시
+
+**globals.css**: `@import "tailwindcss";` 후 `@apply min-h-screen bg-gray-50` 등 사용.
+
+**Module CSS 파일**: `@import "tailwindcss"` 및 `@apply` 사용 금지. 순수 CSS 속성만 작성.
+
+**TSX**: `import styles from './Component.module.css';` 후 `className={styles.xxx}` 사용. 컴포넌트에 Tailwind 클래스 직접 작성 금지.

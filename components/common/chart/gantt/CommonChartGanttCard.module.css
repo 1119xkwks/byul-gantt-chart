@@ -90,42 +90,6 @@
     background-color: #f9fafb;
 }
 
-.ganttTaskTitle {
-    flex: 1;
-    font-size: 13px;
-    color: #374151;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.ganttTaskStatus {
-    padding: 2px 6px;
-    font-size: 10px;
-    font-weight: 500;
-    border-radius: 3px;
-    margin-left: 6px;
-}
-
-.ganttTaskStatus.planning {
-    background-color: #dbeafe;
-    color: #1d4ed8;
-}
-
-.ganttTaskStatus.development {
-    background-color: #fef3c7;
-    color: #d97706;
-}
-
-.ganttTaskStatus.review {
-    background-color: #e5e7eb;
-    color: #6b7280;
-}
-
-.ganttTaskStatus.completed {
-    background-color: #dcfce7;
-    color: #16a34a;
-}
 
 /* ============================================
    메인 콘텐츠 영역
@@ -223,7 +187,7 @@
 .ganttTimelineHeaderInner {
     position: relative;
     display: flex;
-    gap: 12px;
+    gap: 0;
     height: 100%;
 }
 
@@ -311,7 +275,7 @@
 }
 
 /* ============================================
-   차트 영역
+   차트 영역 (그리드·데이터 바 함께 스크롤·클리핑)
    ============================================ */
 .ganttChartArea {
     flex: 1;
@@ -322,6 +286,7 @@
 .ganttChartInner {
     position: relative;
     min-height: 100%;
+    overflow: hidden;
 }
 
 .ganttChartRows {
@@ -345,7 +310,7 @@
     pointer-events: none;
 }
 
-/* 간트 바 */
+/* 간트 바 (뷰포트 밖은 스크롤 영역에서 잘림) */
 .ganttBar {
     position: absolute;
     height: 22px;
@@ -356,14 +321,11 @@
     padding: 0 6px;
     font-size: 11px;
     white-space: nowrap;
-    cursor: pointer;
     z-index: 5;
     transition: filter 0.15s;
     gap: 4px;
     overflow: visible;
-    /* 내부 요소가 밖으로 나갈 수 있게 변경 */
     box-sizing: border-box;
-    /* 너비 계산 고정 */
 }
 
 .ganttBar:hover {
@@ -372,73 +334,62 @@
     /* Hover시 위로 올라오도록 */
 }
 
-/* 바 색상들 */
-.ganttBar.planning {
-    background-color: #dbeafe;
-    color: #1d4ed8;
-}
 
-.ganttBar.development {
-    background-color: #fef3c7;
-    color: #92400e;
-}
+/* 내부 텍스트: 막대가 좁아도 ... 없이 넘쳐서 보이게 (스토리보드 10) */
 
-.ganttBar.review {
-    background-color: #e5e7eb;
-    color: #6b7280;
-}
-
-.ganttBar.completed {
-    background-color: #dcfce7;
-    color: #166534;
-}
-
-/* 내부 텍스트 래퍼 */
-.ganttBarContent {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex: 1;
-}
-
-/* 바 바깥으로 넘치는 텍스트 */
-.ganttBarOverflowText {
+/* 데이터 막대 좌/우 오버플로우 버튼 (스토리보드: 좌측 가림 → ←, 우측 가림 → →) */
+.ganttBarOverflowButton {
     position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 20px;
+    min-width: 22px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #374151;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.ganttBarOverflowButton:hover {
+    background-color: #ffffff;
+    border-color: #d1d5db;
+}
+
+.ganttBarOverflowTooltip {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
     left: 100%;
     margin-left: 6px;
     white-space: nowrap;
-    color: #374151;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 4px 8px;
     font-size: 11px;
-    pointer-events: none;
-    opacity: 0.8;
-}
-
-.ganttBarStatus {
-    padding: 1px 4px;
-    font-size: 9px;
     font-weight: 500;
-    border-radius: 2px;
-    flex-shrink: 0;
+    color: #374151;
+    z-index: 50;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
 }
 
-.ganttBarStatus.planning {
-    background-color: #93c5fd;
-    color: #1e40af;
-}
-
-.ganttBarStatus.development {
-    background-color: #fcd34d;
-    color: #78350f;
-}
-
-.ganttBarStatus.review {
-    background-color: #d1d5db;
-    color: #4b5563;
-}
-
-.ganttBarStatus.completed {
-    background-color: #86efac;
-    color: #14532d;
+.ganttBarOverflowButtonRight .ganttBarOverflowTooltip {
+    left: auto;
+    right: 100%;
+    margin-left: 0;
+    margin-right: 6px;
 }
 
 /* 기간 오버레이 (헤더에 표시) */

@@ -1,15 +1,26 @@
+'use client';
+
 import CommonChartGanttCard from '@/components/common/chart/gantt/CommonChartGanttCard';
 
-import type { GanttTask, GanttChartOptions } from '@/types/ganttTypes';
+import type { GanttChartOptions } from '@/types/ganttTypes';
+
+type LocalTask = {
+  id: string;
+  title: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  progress: number;
+};
 
 /**
  * Mock 데이터 - 간트차트 태스크 목록
  */
-const mockTasks: GanttTask[] = [
+const mockTasks: LocalTask[] = [
   {
     id: '1',
     title: 'Front-End 환경 셋팅',
-    status: 'Development',
+    status: 'development',
     startDate: '2026-01-15',
     endDate: '2026-01-25',
     progress: 0,
@@ -17,7 +28,7 @@ const mockTasks: GanttTask[] = [
   {
     id: '2',
     title: 'Front-End 공통 개발',
-    status: 'Development',
+    status: 'development',
     startDate: '2026-01-20',
     endDate: '2026-02-05',
     progress: 0,
@@ -25,7 +36,7 @@ const mockTasks: GanttTask[] = [
   {
     id: '3',
     title: 'Back-End 환경 셋팅',
-    status: 'Development',
+    status: 'development',
     startDate: '2026-01-18',
     endDate: '2026-02-15',
     progress: 0,
@@ -33,7 +44,7 @@ const mockTasks: GanttTask[] = [
   {
     id: '4',
     title: '인사관리',
-    status: 'Development',
+    status: 'development',
     startDate: '2026-01-20',
     endDate: '2026-02-01',
     progress: 0,
@@ -41,7 +52,7 @@ const mockTasks: GanttTask[] = [
   {
     id: '5',
     title: '근태관리',
-    status: 'Development',
+    status: 'development',
     startDate: '2026-01-25',
     endDate: '2026-02-10',
     progress: 0,
@@ -49,7 +60,7 @@ const mockTasks: GanttTask[] = [
   {
     id: '6',
     title: '기타관리',
-    status: 'Development',
+    status: 'development',
     startDate: '2026-02-01',
     endDate: '2026-02-15',
     progress: 0,
@@ -57,7 +68,7 @@ const mockTasks: GanttTask[] = [
   {
     id: '7',
     title: '채팅',
-    status: 'Development',
+    status: 'development',
     startDate: '2026-02-05',
     endDate: '2026-02-15',
     progress: 0,
@@ -65,7 +76,7 @@ const mockTasks: GanttTask[] = [
   {
     id: '8',
     title: '앱',
-    status: 'Development',
+    status: 'development',
     startDate: '2026-02-10',
     endDate: '2026-02-28',
     progress: 0,
@@ -73,7 +84,7 @@ const mockTasks: GanttTask[] = [
   {
     id: '9',
     title: '홈피드',
-    status: 'Development',
+    status: 'development',
     startDate: '2026-02-10',
     endDate: '2026-02-20',
     progress: 0,
@@ -81,7 +92,7 @@ const mockTasks: GanttTask[] = [
   {
     id: '10',
     title: '테스트',
-    status: 'Review',
+    status: 'review',
     startDate: '2026-02-25',
     endDate: '2026-05-10',
     progress: 0,
@@ -91,7 +102,7 @@ const mockTasks: GanttTask[] = [
 /**
  * 간트차트 옵션 설정
  */
-const ganttOptions: Partial<GanttChartOptions> = {
+const ganttOptions: Partial<GanttChartOptions<LocalTask>> = {
   headerLeft: {
     dateDisplayFormat: 'korean',
     showTimelineList: true,
@@ -99,23 +110,72 @@ const ganttOptions: Partial<GanttChartOptions> = {
   },
   headerRight: {
     showPeriodSelector: true,
-    selectedPeriod: 'Year',
+    selectedPeriod: 'year',
     showTodayButton: true,
     showPrevNextButtons: true,
     showNavigationButtons: true,
   },
   header: {
     dateDisplayFormat: 'korean',
-    selectedPeriod: 'Year',
+    selectedPeriod: 'quarter',
+    periodOverlayStyle: {
+      backgroundColor: '#f3f4f6',
+      color: '#374151',
+      borderColor: '#e5e7eb',
+      borderWidth: 1,
+      borderStyle: 'solid',
+    },
   },
   body: {
     showTodayLine: true,
-    barContentDisplay: 'title',
+    renderBarContents: (task) => (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <span style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{task.title}</span>
+        <span
+          style={{
+            padding: '1px 4px',
+            fontSize: '9px',
+            borderRadius: '2px',
+            backgroundColor: '#fef3c7',
+            color: '#d97706',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {task.status}
+        </span>
+      </div>
+    ),
+    getBarStyle: (task) => ({
+      backgroundColor: '#f3f4f6',
+      color: 'inherit',
+      borderColor: '#e5e7eb',
+      borderWidth: 1,
+      borderStyle: 'solid',
+    }),
   },
   bottom: {
     showNavigationButtons: true,
     showScrollbar: true,
   },
+  renderLeftPanelContents: (task) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <span style={{ fontSize: '13px', color: '#374151', whiteSpace: 'nowrap' }}>
+        {task.title}
+      </span>
+      <span
+        style={{
+          padding: '2px 6px',
+          fontSize: '10px',
+          fontWeight: 500,
+          borderRadius: '3px',
+          backgroundColor: '#fef3c7',
+          color: '#d97706',
+        }}
+      >
+        {task.status}
+      </span>
+    </div>
+  ),
 };
 
 export default function Home() {
@@ -127,6 +187,9 @@ export default function Home() {
       <div style={{ marginTop: '24px', height: '600px', border: '1px solid #e9e9e7', borderRadius: '4px' }}>
         <CommonChartGanttCard
           tasks={mockTasks}
+          getTaskId={(task) => task.id}
+          getTaskStartDate={(task) => task.startDate}
+          getTaskEndDate={(task) => task.endDate}
           startDate="2025-09-01"
           endDate="2026-05-31"
           options={ganttOptions}

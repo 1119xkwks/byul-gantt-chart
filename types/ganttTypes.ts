@@ -1,47 +1,17 @@
 /**
  * 간트차트 관련 타입 정의
  */
-
-/**
- * 간트차트 태스크 상태
- */
-export type TaskStatus = 'Planning' | 'Development' | 'Review' | 'Completed';
+import type { ReactNode } from 'react';
 
 /**
  * 기간 표시 단위
  */
-export type PeriodUnit = 'Hours' | 'Day' | 'Week' | 'Bi-week' | 'Month' | 'Quarter' | 'Year' | '5 Years';
+export type PeriodUnit = 'year' | 'quarter' | 'month' | 'week';
 
 /**
  * 날짜 표시 형식
  */
 export type DateDisplayFormat = 'korean' | 'english';
-
-/**
- * 간트차트 태스크 데이터
- */
-export interface GanttTask {
-    /** 태스크 고유 ID */
-    id: string;
-    /** 태스크 제목 */
-    title: string;
-    /** 태스크 상태 */
-    status: TaskStatus;
-    /** 시작 날짜 (YYYY-MM-DD) */
-    startDate: string;
-    /** 종료 날짜 (YYYY-MM-DD) */
-    endDate: string;
-    /** 진행률 (0-100) */
-    progress: number;
-    /** 상위 태스크 ID (없으면 최상위) */
-    parentId?: string;
-    /** 하위 태스크 목록 */
-    children?: GanttTask[];
-    /** 태스크 레벨 (계층 깊이) */
-    level?: number;
-    /** 태스크 확장 여부 */
-    isExpanded?: boolean;
-}
 
 /**
  * 헤더 좌측 옵션
@@ -63,6 +33,8 @@ export interface GanttHeaderRightOptions {
     showPeriodSelector: boolean;
     /** 선택된 기간 단위 */
     selectedPeriod: PeriodUnit;
+    /** 기간 선택 옵션 목록 (미지정 시 기본 4종) */
+    periodOptions?: PeriodUnit[];
     /** Today 버튼 표시 여부 */
     showTodayButton: boolean;
     /** 이전/다음 버튼 표시 여부 */
@@ -79,16 +51,42 @@ export interface GanttHeaderOptions {
     dateDisplayFormat: DateDisplayFormat;
     /** 선택된 기간 단위 */
     selectedPeriod: PeriodUnit;
+    /**
+     * 헤더 기간 오버레이 스타일 (hover 시 표시되는 기간 표시)
+     * backgroundColor/color/borderColor/borderWidth/borderStyle 지정 가능
+     */
+    periodOverlayStyle?: {
+        backgroundColor?: string;
+        color?: string;
+        borderColor?: string;
+        borderWidth?: number;
+        borderStyle?: 'solid' | 'dashed' | 'dotted';
+    };
 }
 
 /**
  * Body 옵션
  */
-export interface GanttBodyOptions {
+export interface GanttBodyOptions<T> {
     /** 오늘 날짜 선 표시 여부 */
     showTodayLine: boolean;
-    /** 바 내용 표시 옵션 */
-    barContentDisplay: 'title' | 'status' | 'both' | 'none';
+    /**
+     * 막대 내부 콘텐츠 사용자 정의 렌더 (스토리보드 10)
+     * 제공 시 이 컴포넌트가 막대 안에 렌더되며, 미제공 시 빈 상태
+     */
+    renderBarContents?: (task: T) => ReactNode;
+    /**
+     * 막대 스타일 사용자 정의 (색상/아웃라인 포함)
+     * backgroundColor/color: 막대 색상
+     * borderColor/borderWidth/borderStyle: 아웃라인
+     */
+    getBarStyle?: (task: T) => {
+        backgroundColor?: string;
+        color?: string;
+        borderColor?: string;
+        borderWidth?: number;
+        borderStyle?: 'solid' | 'dashed' | 'dotted';
+    };
 }
 
 /**
@@ -104,7 +102,7 @@ export interface GanttBottomOptions {
 /**
  * 간트차트 전체 옵션
  */
-export interface GanttChartOptions {
+export interface GanttChartOptions<T> {
     /** 헤더 좌측 옵션 */
     headerLeft: GanttHeaderLeftOptions;
     /** 헤더 우측 옵션 */
@@ -112,21 +110,29 @@ export interface GanttChartOptions {
     /** 헤더 공통 옵션 */
     header: GanttHeaderOptions;
     /** Body 옵션 */
-    body: GanttBodyOptions;
+    body: GanttBodyOptions<T>;
     /** 하단 컨트롤러 옵션 */
     bottom: GanttBottomOptions;
+    /** 좌측 목록 렌더 옵션 */
+    renderLeftPanelContents?: (task: T) => ReactNode;
 }
 
 /**
  * CommonChartGanttCard 컴포넌트 Props
  */
-export interface CommonChartGanttCardProps {
+export interface CommonChartGanttCardProps<T> {
     /** 태스크 데이터 목록 */
-    tasks: GanttTask[];
+    tasks: T[];
+    /** 태스크 ID */
+    getTaskId: (task: T) => string;
+    /** 태스크 시작 날짜 */
+    getTaskStartDate: (task: T) => string;
+    /** 태스크 종료 날짜 */
+    getTaskEndDate: (task: T) => string;
     /** 차트 시작 날짜 (기본: 오늘 기준 이전 달) */
     startDate?: string;
     /** 차트 종료 날짜 (기본: 오늘 기준 다음 달) */
     endDate?: string;
     /** 간트차트 옵션 */
-    options?: Partial<GanttChartOptions>;
+    options?: Partial<GanttChartOptions<T>>;
 }
