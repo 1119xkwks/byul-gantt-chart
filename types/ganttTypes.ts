@@ -49,8 +49,6 @@ export interface GanttHeaderRightOptions {
 export interface GanttHeaderOptions {
     /** 날짜 표시 형식 */
     dateDisplayFormat: DateDisplayFormat;
-    /** 선택된 기간 단위 */
-    selectedPeriod: PeriodUnit;
     /**
      * 헤더 기간 오버레이 스타일 (hover 시 표시되는 기간 표시)
      * backgroundColor/color/borderColor/borderWidth/borderStyle 지정 가능

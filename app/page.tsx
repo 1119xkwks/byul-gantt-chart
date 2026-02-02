@@ -197,7 +197,6 @@ const ganttOptions: Partial<GanttChartOptions<LocalTask>> = {
   },
   header: {
     dateDisplayFormat: 'korean',
-    selectedPeriod: 'quarter',
     periodOverlayStyle: {
       backgroundColor: '#f3f4f6',
       color: '#374151',

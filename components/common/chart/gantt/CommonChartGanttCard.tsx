@@ -40,7 +40,6 @@ const defaultOptions: GanttChartOptions<unknown> = {
     /** 헤더 공통 표시 방식(날짜 포맷, 기간 단위) 설정 */
     header: {
         dateDisplayFormat: 'korean',
-        selectedPeriod: 'year',
     },
     /** 바디(차트 영역) 설정 */
     body: {
@@ -81,7 +80,7 @@ export default function CommonChartGanttCard<T>({
     }) as GanttChartOptions<T>, [propsOptions]);
 
     // 기간 선택 State
-    const [selectedPeriod, setSelectedPeriod] = useState<PeriodUnit>(options.header.selectedPeriod);
+    const [selectedPeriod, setSelectedPeriod] = useState<PeriodUnit>(options.headerRight.selectedPeriod);
 
     // 현재 Period에 따른 DAY_WIDTH
     const DAY_WIDTH = DAY_WIDTH_BY_PERIOD[selectedPeriod] || 4;
