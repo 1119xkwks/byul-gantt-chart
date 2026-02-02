@@ -133,6 +133,10 @@ export interface CommonChartGanttCardProps<T> {
     startDate?: string;
     /** 차트 종료 날짜 (기본: 오늘 기준 다음 달) */
     endDate?: string;
+    /** 컴포넌트 높이 (예: 600, '600px', '100%') */
+    height?: number | string;
+    /** 좌측 패널 스크롤 동기화 (기본: true) */
+    syncLeftPanelScroll?: boolean;
     /** 간트차트 옵션 */
     options?: Partial<GanttChartOptions<T>>;
 }

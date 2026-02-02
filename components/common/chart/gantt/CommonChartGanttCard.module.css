@@ -77,6 +77,15 @@
     overflow-y: auto;
 }
 
+.ganttTaskListSync {
+    scrollbar-width: none;
+}
+
+.ganttTaskListSync::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
 .ganttTaskRow {
     display: flex;
     align-items: center;

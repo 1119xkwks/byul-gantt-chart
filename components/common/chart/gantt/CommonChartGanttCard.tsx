@@ -63,6 +63,8 @@ export default function CommonChartGanttCard<T>({
     getTaskId,
     getTaskStartDate,
     getTaskEndDate,
+    height,
+    syncLeftPanelScroll = true,
     options: propsOptions,
 }: CommonChartGanttCardProps<T>) {
     // 옵션 병합
@@ -119,6 +121,7 @@ export default function CommonChartGanttCard<T>({
     // Refs & State for Scroll Control
     const chartAreaRef = useRef<HTMLDivElement>(null);
     const timelineHeaderRef = useRef<HTMLDivElement>(null);
+    const leftPanelListRef = useRef<HTMLDivElement>(null);
     const initialScrollDone = useRef(false);
     const [scrollTrigger, setScrollTrigger] = useState(0); // 스크롤 강제 트리거
     /** 오버플로우 버튼으로 페이지를 넘긴 뒤, 새 범위에서 해당 막대로 스크롤하기 위한 대기 ref */
@@ -212,12 +215,29 @@ export default function CommonChartGanttCard<T>({
         const handleScroll = () => {
             timelineHeader.scrollLeft = chartArea.scrollLeft;
             updateOverlayYearMonth();
+            if (syncLeftPanelScroll && leftPanelListRef.current) {
+                leftPanelListRef.current.scrollTop = chartArea.scrollTop;
+            }
         };
 
         chartArea.addEventListener('scroll', handleScroll);
         updateOverlayYearMonth();
+        if (syncLeftPanelScroll && leftPanelListRef.current) {
+            leftPanelListRef.current.scrollTop = chartArea.scrollTop;
+        }
         return () => chartArea.removeEventListener('scroll', handleScroll);
-    }, [chartRange, updateOverlayYearMonth]);
+    }, [chartRange, updateOverlayYearMonth, syncLeftPanelScroll]);
+
+    useEffect(() => {
+        const leftPanelList = leftPanelListRef.current;
+        if (!leftPanelList || !syncLeftPanelScroll) return;
+        const handleWheel = (event: WheelEvent) => {
+            event.preventDefault();
+            chartAreaRef.current?.scrollBy({ top: event.deltaY });
+        };
+        leftPanelList.addEventListener('wheel', handleWheel, { passive: false });
+        return () => leftPanelList.removeEventListener('wheel', handleWheel);
+    }, [syncLeftPanelScroll]);
 
     // 리사이즈 시 뷰포트 너비 갱신
     useEffect(() => {
@@ -442,7 +462,7 @@ export default function CommonChartGanttCard<T>({
     const isTodayInRange = todayInfo.position > 0 && todayInfo.position < totalDays * DAY_WIDTH;
 
     return (
-        <div className={styles.ganttCardContainer}>
+        <div className={styles.ganttCardContainer} style={{ height: height ?? '100%' }}>
             {/* 좌측 토글 버튼 (오버레이) */}
             <button
                 className={styles.ganttToggleButton}
@@ -455,7 +475,10 @@ export default function CommonChartGanttCard<T>({
             {/* 좌측 패널 (오버레이) */}
             <div className={`${styles.ganttLeftPanel} ${isLeftPanelOpen ? '' : styles.collapsed}`}>
                 <div className={styles.ganttLeftPanelHeader} />
-                <div className={styles.ganttTaskList}>
+                <div
+                    className={`${styles.ganttTaskList} ${syncLeftPanelScroll ? styles.ganttTaskListSync : ''}`}
+                    ref={leftPanelListRef}
+                >
                     {tasks.length === 0 ? (
                         <div className={styles.ganttEmptyState}>
                             <span>태스크가 없습니다</span>
