@@ -6,7 +6,7 @@
 .ganttCardContainer {
     position: relative;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     width: 100%;
     height: 100%;
     min-height: 400px;
@@ -21,10 +21,7 @@
    좌측 토글 버튼 (오버레이)
    ============================================ */
 .ganttToggleButton {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
+    position: relative;
     width: 24px;
     display: flex;
     align-items: center;
@@ -35,7 +32,7 @@
     color: #9ca3af;
     cursor: pointer;
     font-size: 12px;
-    z-index: 20;
+    z-index: 1;
     transition: background-color 0.15s, color 0.15s;
 }
 
@@ -45,25 +42,21 @@
 }
 
 /* ============================================
-   좌측 패널 (오버레이)
+   좌측 패널 (오버레이에서 레이아웃으로 변경)
    ============================================ */
 .ganttLeftPanel {
-    position: absolute;
-    left: 24px;
-    top: 0;
-    bottom: 0;
     width: 280px;
     background-color: #ffffff;
     border-right: 1px solid #e5e7eb;
-    z-index: 10;
     display: flex;
     flex-direction: column;
-    transform: translateX(0);
-    transition: transform 0.2s ease;
+    transition: width 0.2s ease;
+    overflow: hidden;
 }
 
 .ganttLeftPanel.collapsed {
-    transform: translateX(-280px);
+    width: 0;
+    border-right: none;
 }
 
 .ganttLeftPanelHeader {
@@ -107,7 +100,6 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    margin-left: 24px;
     overflow: hidden;
 }
 
