@@ -66,6 +66,7 @@ export default function CommonChartGanttCard<T>({
     height,
     syncLeftPanelScroll = true,
     showTodayChartOnResize = true,
+    todayScrollPositionRatio = 0.5,
     options: propsOptions,
 }: CommonChartGanttCardProps<T>) {
     // 옵션 병합
@@ -287,7 +288,8 @@ export default function CommonChartGanttCard<T>({
                 const clientWidth = chartArea.clientWidth;
                 const centerScroll = (scrollWidth - clientWidth) / 2;
                 const todayPositionPx = todayInfo.position;
-                const todayScroll = todayPositionPx - (clientWidth / 2);
+                const ratio = Math.min(1, Math.max(0, todayScrollPositionRatio));
+                const todayScroll = todayPositionPx - (clientWidth * ratio);
                 const todayInRange = todayPositionPx >= 0 && todayPositionPx <= scrollWidth;
                 const targetScroll = todayInRange ? todayScroll : centerScroll;
                 chartArea.scrollTo({ left: Math.max(0, Math.min(scrollWidth - clientWidth, targetScroll)), behavior: 'auto' });

@@ -273,6 +273,8 @@ export default function Home() {
           startDate="2025-09-01"
           endDate="2026-05-31"
           options={ganttOptions}
+          showTodayChartOnResize={true}
+          todayScrollPositionRatio={0.5}
         />
       </div>
     </div>

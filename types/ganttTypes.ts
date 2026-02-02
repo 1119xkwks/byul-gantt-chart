@@ -139,6 +139,8 @@ export interface CommonChartGanttCardProps<T> {
     syncLeftPanelScroll?: boolean;
     /** 리사이즈 시 Today 이동 (기본: true) */
     showTodayChartOnResize?: boolean;
+    /** Today 이동 시 뷰포트 내 위치 비율 (0~1, 기본 0.5) */
+    todayScrollPositionRatio?: number;
     /** 간트차트 옵션 */
     options?: Partial<GanttChartOptions<T>>;
 }
