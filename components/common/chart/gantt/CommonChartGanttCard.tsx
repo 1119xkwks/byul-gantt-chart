@@ -65,6 +65,7 @@ export default function CommonChartGanttCard<T>({
     getTaskEndDate,
     height,
     syncLeftPanelScroll = true,
+    showTodayChartOnResize = true,
     options: propsOptions,
 }: CommonChartGanttCardProps<T>) {
     // 옵션 병합
@@ -122,6 +123,7 @@ export default function CommonChartGanttCard<T>({
     const chartAreaRef = useRef<HTMLDivElement>(null);
     const timelineHeaderRef = useRef<HTMLDivElement>(null);
     const leftPanelListRef = useRef<HTMLDivElement>(null);
+    const cardContainerRef = useRef<HTMLDivElement>(null);
     const initialScrollDone = useRef(false);
     const [scrollTrigger, setScrollTrigger] = useState(0); // 스크롤 강제 트리거
     /** 오버플로우 버튼으로 페이지를 넘긴 뒤, 새 범위에서 해당 막대로 스크롤하기 위한 대기 ref */
@@ -341,6 +343,22 @@ export default function CommonChartGanttCard<T>({
         setScrollTrigger(prev => prev + 1);
     };
 
+    // 사용자가 너비 크기 변경하면 Today 버튼 클릭 핸들러 호출
+    useEffect(() => {
+        const container = cardContainerRef.current;
+        if (!container || !showTodayChartOnResize) return;
+        let lastWidth = container.clientWidth;
+        const ro = new ResizeObserver(() => {
+            const nextWidth = container.clientWidth;
+            if (nextWidth !== lastWidth) {
+                lastWidth = nextWidth;
+                handleTodayClick();
+            }
+        });
+        ro.observe(container);
+        return () => ro.disconnect();
+    }, [handleTodayClick, showTodayChartOnResize]);
+
     // 페이징 (기간 이동) 핸들러 (<<, >>)
     const handlePagePrev = () => {
         const config = getPeriodConfig(selectedPeriod);
@@ -462,7 +480,7 @@ export default function CommonChartGanttCard<T>({
     const isTodayInRange = todayInfo.position > 0 && todayInfo.position < totalDays * DAY_WIDTH;
 
     return (
-        <div className={styles.ganttCardContainer} style={{ height: height ?? '100%' }}>
+        <div className={styles.ganttCardContainer} ref={cardContainerRef} style={{ height: height ?? '100%' }}>
             {/* 좌측 토글 버튼 (오버레이) */}
             <button
                 className={styles.ganttToggleButton}

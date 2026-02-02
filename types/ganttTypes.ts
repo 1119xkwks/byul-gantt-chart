@@ -137,6 +137,8 @@ export interface CommonChartGanttCardProps<T> {
     height?: number | string;
     /** 좌측 패널 스크롤 동기화 (기본: true) */
     syncLeftPanelScroll?: boolean;
+    /** 리사이즈 시 Today 이동 (기본: true) */
+    showTodayChartOnResize?: boolean;
     /** 간트차트 옵션 */
     options?: Partial<GanttChartOptions<T>>;
 }
